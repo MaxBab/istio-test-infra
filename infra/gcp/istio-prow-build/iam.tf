@@ -115,6 +115,26 @@ module "prowjob_testing_write_account" {
   prowjob = true
 }
 
+# SA used by the kubernetes-external-secrets operator running in the build
+# clusters (both `prow` and `prow-arm` in istio-prow-build). Both clusters
+# share the same Workload Identity pool, so a single GCP SA + binding to
+# `default/kubernetes-external-secrets-sa` works for both.
+#
+# When adding a new ExternalSecret under prow/cluster/build/ or
+# prow/cluster/arm/, add the corresponding GSM secret to the `secrets`
+# list below so the operator can fetch it.
+module "kubernetes_external_secrets_account" {
+  source            = "../modules/workload-identity-service-account"
+  project_id        = local.project_id
+  name              = "kubernetes-external-secrets-sa"
+  description       = "Service account used by kubernetes-external-secrets operator on the build clusters."
+  cluster_namespace = "default"
+  secrets = [
+    { name = "cf_r2_istio-prow_credentials", project = "istio-testing" },
+  ]
+  prowjob = false
+}
+
 module "opentelemetry_collector_account" {
   source            = "../modules/workload-identity-service-account"
   project_id        = local.project_id
